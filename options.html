@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EdgeMark 설정</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/icon-48.png" alt="" />
+      <div>
+        <h1>EdgeMark 설정</h1>
+        <p class="sub" id="sub"></p>
+      </div>
+    </header>
+
+    <section>
+      <h2>사이드바</h2>
+      <label class="row">
+        <span>
+          <b>항목을 클릭하면</b>
+          <small>Ctrl·가운데 클릭은 항상 새 탭(뒤에서), Shift 클릭은 항상 새 탭으로 엽니다</small>
+        </span>
+        <select id="openIn">
+          <option value="newTab">새 탭에서 열기</option>
+          <option value="current">지금 탭에서 열기</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>
+          <b>정렬</b>
+          <small>기본 순서는 브라우저 즐겨찾기에 저장된 순서 그대로, 이름 순서는 폴더를 먼저 놓고 그다음 북마크를 놓습니다</small>
+        </span>
+        <select id="sort">
+          <option value="browser">기본 순서</option>
+          <option value="title">이름 순서</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>
+          <b>창이 최대화일 때만 열기</b>
+          <small>창 모드나 팝업 창에서는 왼쪽 끝에 마우스를 대도 열지 않습니다 (아이콘 클릭으로는 열림)</small>
+        </span>
+        <input type="checkbox" id="maximizedOnly" />
+      </label>
+      <label class="row sub" id="row-peekWindowed">
+        <span>
+          <b>창 모드·팝업에서는 열기 탭만 살짝 보이기</b>
+          <small>왼쪽 끝에 마우스를 대면 사이드바 대신 작은 탭이 나오고, 누르면 사이드바가 열립니다 (팝업을 가리지 않게)</small>
+        </span>
+        <input type="checkbox" id="peekWindowed" />
+      </label>
+      <label class="row">
+        <span>
+          <b>한 번에 한 폴더만 펼치기</b>
+          <small>폴더를 열면 같은 단계의 다른 폴더는 닫힙니다</small>
+        </span>
+        <input type="checkbox" id="accordion" />
+      </label>
+      <label class="row">
+        <span>
+          <b>펼친 폴더 기억하기</b>
+          <small>다시 열 때 펼쳐 둔 폴더와 스크롤 위치를 그대로 둡니다. 끄면 매번 첫 폴더만 펼친 상태로 열립니다</small>
+        </span>
+        <input type="checkbox" id="remember" />
+      </label>
+    </section>
+
+    <section>
+      <h2>모양</h2>
+      <div class="look">
+        <div class="sizes">
+          <label class="size">
+            <span><b>글자 크기</b> <small>10 ~ 20 · 기본 15</small></span>
+            <span class="num">
+              <input type="range" id="fontSizeRange" min="10" max="20" step="1" />
+              <input type="number" id="fontSize" min="10" max="20" step="1" /> px
+            </span>
+          </label>
+          <label class="size">
+            <span><b>목록 간격</b> <small>한 줄의 높이 · 20 ~ 48 · 기본 40</small></span>
+            <span class="num">
+              <input type="range" id="rowHeightRange" min="20" max="48" step="1" />
+              <input type="number" id="rowHeight" min="20" max="48" step="1" /> px
+            </span>
+          </label>
+          <label class="size">
+            <span><b>사이드바 너비</b> <small>240 ~ 600 · 기본 400</small></span>
+            <span class="num">
+              <input type="range" id="widthRange" min="240" max="600" step="10" />
+              <input type="number" id="width" min="240" max="600" step="10" /> px
+            </span>
+          </label>
+          <button type="button" id="btn-size-reset">기본값으로</button>
+          <p class="hint">오른쪽 미리보기는 실제 사이드바와 같은 모양·너비입니다 (즐겨찾기 모음의 앞부분).</p>
+        </div>
+        <div id="preview" class="preview"></div>
+      </div>
+    </section>
+
+    <section id="storage">
+      <h2>동기화</h2>
+
+      <div id="storage-browser" hidden>
+        <p class="state"><b>브라우저 계정 동기화</b> (기본)</p>
+        <p class="desc">Edge에 로그인하고 확장 동기화를 켜 두면 같은 계정의 다른 PC와 공유됩니다. 외부 서버와 통신하지 않습니다.</p>
+        <button type="button" id="btn-open-connect">서버(WebDAV) 동기화 연결</button>
+      </div>
+
+      <div id="storage-server" hidden>
+        <p class="state"><b>서버(WebDAV) 동기화</b> <span id="server-url" class="url"></span></p>
+        <p class="desc" id="server-state"></p>
+        <div class="buttons">
+          <button type="button" id="btn-sync" class="accent">동기화<span id="dirty-dot" hidden></span></button>
+          <button type="button" id="btn-edit-connect">접속 정보 변경</button>
+          <button type="button" id="btn-disconnect" class="danger">브라우저 동기화로 전환</button>
+        </div>
+      </div>
+
+      <form id="form-connect" autocomplete="off" hidden>
+        <label>WebDAV 폴더 주소<input name="url" type="url" required placeholder="https://my-server/folder" /></label>
+        <label>아이디<input name="username" required /></label>
+        <label>비밀번호<input name="password" type="password" /></label>
+        <p class="desc">설정은 이 폴더 아래 계정별 파일로 저장되고, 아이디·비밀번호로 암호화됩니다. 다른 PC에서도 같은 주소와 아이디·비밀번호를 넣으면 같은 설정을 씁니다. 저장된 비밀번호는 다시 표시하지 않습니다.</p>
+        <div class="buttons">
+          <button type="submit" class="accent">연결 및 동기화</button>
+          <button type="button" id="connect-cancel">취소</button>
+        </div>
+      </form>
+      <p id="storage-message" class="message" hidden></p>
+    </section>
+  </main>
+
+  <!-- 연결할 때 서버에 다른 설정이 있으면 (StayTab · DragOn 과 같음) -->
+  <dialog id="conflict">
+    <p>서버에 이 기기와 다른 설정이 있습니다.
+어느 쪽을 쓸까요?</p>
+    <div class="buttons stack">
+      <button value="remote" class="accent">서버 설정으로 덮어쓰기</button>
+      <button value="local">이 기기 설정을 서버에 올리기</button>
+      <button value="">취소</button>
+    </div>
+  </dialog>
+
+  <script src="sidebar-view.js"></script>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

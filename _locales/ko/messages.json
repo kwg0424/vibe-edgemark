@@ -1,0 +1,11 @@
+{
+   "extDesc": {
+      "message": "마우스를 화면 왼쪽 끝에 대면 북마크 사이드바가 열립니다. 검색·키보드 이동, 드래그로 정리, 폴더 추가·삭제를 지원하고 설정은 브라우저 계정이나 WebDAV 서버로 동기화합니다."
+   },
+   "extName": {
+      "message": "EdgeMark - 가장자리 북마크 사이드바"
+   },
+   "extShortName": {
+      "message": "EdgeMark"
+   }
+}

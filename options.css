@@ -1,0 +1,147 @@
+/* StayTab 설정 화면과 같은 모양 */
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --fg: #1f2328;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --ok: #15803d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181b;
+    --card: #1f2023;
+    --fg: #e6e6e6;
+    --muted: #9ca3af;
+    --line: #34363b;
+    --accent: #60a5fa;
+    --danger: #f87171;
+    --ok: #4ade80;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 "Segoe UI", "Malgun Gothic", sans-serif;
+}
+main {
+  max-width: 960px; /* 모양 섹션에 미리보기(최대 600px)와 조절 칸을 나란히 놓으려고 */
+  margin: 32px auto;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+header img { width: 40px; height: 40px; }
+h1 { margin: 0; font-size: 20px; }
+h2 { margin: 0 0 10px; font-size: 16px; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+section + section { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.row small { display: block; color: var(--muted); font-size: 12px; }
+.row.sub { padding-left: 24px; } /* 위 설정의 하위 설정 */
+.row.off { opacity: 0.5; cursor: default; }
+input[type="checkbox"]:disabled { cursor: default; }
+
+input[type="checkbox"] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+input[type="checkbox"]:checked::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.num input {
+  width: 64px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: right;
+}
+select {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.num input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.num input[type="range"] { flex: 1; width: auto; min-width: 0; padding: 0; border: 0; background: none; accent-color: var(--accent); }
+.num input[type="range"]:focus { outline: none; }
+
+/* 모양: 왼쪽 조절, 오른쪽 미리보기 (실제 사이드바 너비 그대로, 너비는 options.js 가 정한다). 좁으면 위아래로 */
+.look { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.sizes { flex: 1 1 260px; min-width: 0; display: grid; gap: 18px; justify-items: start; }
+.size { display: grid; gap: 6px; width: 100%; }
+.size small { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.preview { flex: none; width: 400px; max-width: 100%; height: 380px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.hint { margin: 0; color: var(--muted); font-size: 12px; }
+
+
+@media (max-width: 560px) {
+  main { margin: 0; border-radius: 0; border: 0; padding: 16px; }
+}
+
+/* 동기화 (StayTab 설정과 같음) */
+.state { margin: 0; }
+.url { color: var(--muted); font-size: 13px; word-break: break-all; }
+.desc { margin: 4px 0 12px; white-space: normal; color: var(--muted); font-size: 13px; }
+.desc.error { color: var(--danger); }
+.message { margin: 8px 0 0; font-size: 13px; color: var(--ok); }
+.message.error { color: var(--danger); }
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg);
+}
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+button.danger { color: var(--danger); }
+button.danger:hover { border-color: var(--danger); }
+button.accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+button.accent:hover { background: color-mix(in srgb, var(--accent) 32%, transparent); border-color: var(--accent); }
+#btn-edit-connect { margin-left: auto; } /* 접속 정보 변경 · 전환은 오른쪽에 묶음 */
+button:disabled { opacity: 0.6; cursor: progress; }
+#btn-sync { position: relative; }
+#dirty-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); border: 2px solid var(--card); }
+#form-connect { display: grid; gap: 10px; max-width: 480px; }
+#form-connect[hidden] { display: none; }
+#form-connect label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+#form-connect input { font: inherit; font-weight: 400; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+#form-connect input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+#form-connect .desc { margin: 0; }
+
+dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--fg); width: 340px; padding: 18px; }
+dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
+dialog p { margin: 0 0 14px; font-size: 14px; white-space: pre-line; }
+.buttons.stack { flex-direction: column; }
