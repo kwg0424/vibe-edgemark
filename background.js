@@ -70,19 +70,29 @@ async function createFolder({ parentId, title }) {
   return { node, path: await ancestors(node.parentId), folder: await folderTitle(node.parentId) };
 }
 
+// 새 탭 자리. pos: next(지금 탭 바로 뒤) / end(창의 맨 뒤)
+const newTabIndex = async (tab, pos) =>
+  pos === "end" ? (await chrome.tabs.query({ windowId: tab.windowId })).length : tab.index + 1;
+
 // where: current(지금 탭) / foreground(새 탭으로 이동) / background(새 탭, 지금 탭 유지)
-async function openUrl(url, where, tab) {
+async function openUrl(url, where, pos, tab) {
   if (where === "current") await chrome.tabs.update(tab.id, { url });
-  else await chrome.tabs.create({ url, active: where === "foreground", index: tab.index + 1, openerTabId: tab.id });
+  else await chrome.tabs.create({ url, active: where === "foreground", index: await newTabIndex(tab, pos), openerTabId: tab.id });
 }
 
-// 폴더 안 북마크 모두 열기: 지금 탭 바로 뒤에 순서대로, 뒤에서
-async function openAll(urls, tab) {
+// 폴더 안 북마크 모두 열기: 새 탭 자리(바로 뒤 / 맨 뒤)부터 순서대로, 뒤에서
+async function openAll(urls, pos, tab) {
+  const start = await newTabIndex(tab, pos);
   for (const [i, url] of urls.entries()) {
-    await chrome.tabs.create({ url, active: false, index: tab.index + 1 + i, openerTabId: tab.id });
+    await chrome.tabs.create({ url, active: false, index: start + i, openerTabId: tab.id });
   }
   return { opened: urls.length };
 }
+
+// 페이지 확대/축소가 바뀌면 그 탭의 사이드바에 알려 준다 (사이드바는 확대와 상관없이 같은 크기로 보이게)
+chrome.tabs.onZoomChange.addListener(({ tabId, newZoomFactor }) => {
+  chrome.tabs.sendMessage(tabId, { type: "zoom", zoom: newZoomFactor }).catch(() => {});
+});
 
 // 아이콘 클릭: 사이드바 열기/닫기 (콘텐츠 스크립트가 없는 edge:// 등에서는 아무 일 없음). 설정은 아이콘 우클릭 → 확장 옵션
 chrome.action.onClicked.addListener((tab) => {
@@ -231,9 +241,13 @@ async function handle(msg, sender) {
     case "search":
       return (await chrome.bookmarks.search(msg.query)).filter((b) => b.url).slice(0, 200);
     case "open":
-      return openUrl(msg.url, msg.where, sender.tab);
+      return openUrl(msg.url, msg.where, msg.pos, sender.tab);
     case "openAll":
-      return openAll(msg.urls, sender.tab);
+      return openAll(msg.urls, msg.pos, sender.tab);
+    case "zoom":
+      return chrome.tabs.getZoom(sender.tab.id);
+    case "options": // 사이드바의 톱니바퀴
+      return chrome.runtime.openOptionsPage();
     case "addPage":
       return addPage(msg);
     case "createFolder":

@@ -5,7 +5,9 @@ const $ = (id) => document.getElementById(id);
 const send = (msg) => chrome.runtime.sendMessage(msg);
 const CONF_KEYS = ["maximizedOnly", "peekWindowed", "accordion", "remember"]; // 체크박스 id = 설정 이름
 const SELECT_KEYS = ["openIn", "sort"]; // 선택 칸 id = 설정 이름
-const NUM_KEYS = ["fontSize", "rowHeight", "width"]; // 숫자 입력란 id = 설정 이름, 슬라이더는 id + "Range" (범위는 src/store.js 의 RANGES)
+const SIZE_KEYS = ["fontSize", "rowHeight", "width"]; // 모양 (미리보기에 바로 보임)
+const SPEED_KEYS = ["slideSpeed", "folderSpeed"]; // 애니메이션 시간(ms)
+const NUM_KEYS = [...SIZE_KEYS, ...SPEED_KEYS]; // 숫자 입력란 id = 설정 이름, 슬라이더는 id + "Range" (범위는 src/store.js 의 RANGES)
 let data = { conf: {} };
 
 function message(id, text, isError) {
@@ -78,12 +80,14 @@ for (const k of NUM_KEYS) {
   };
 }
 
-$("btn-size-reset").onclick = () => saveSize(Object.fromEntries(NUM_KEYS.map((k) => [k, DEFAULTS[k]])));
+const resetTo = (keys) => () => saveSize(Object.fromEntries(keys.map((k) => [k, DEFAULTS[k]])));
+$("btn-size-reset").onclick = resetTo(SIZE_KEYS);
+$("btn-speed-reset").onclick = resetTo(SPEED_KEYS);
 
 // ---------- 미리보기 ----------
 // 실제 사이드바와 같은 CSS·줄(sidebar-view.js)로 그린다. 즐겨찾기 모음의 앞부분, 첫 폴더는 펼쳐서 들여쓰기도 보이게
 
-const { CSS, item, sortItems, ICON_ADD_FOLDER, ICON_DELETE } = EdgeMarkView;
+const { CSS, item, sortItems, ICON_ADD_FOLDER, ICON_DELETE, ICON_SETTINGS } = EdgeMarkView;
 const preview = $("preview").attachShadow({ mode: "open" });
 preview.innerHTML = `<style>${CSS}
   .panel.preview { position: static; width: 100%; height: 100%; transform: none; visibility: visible; transition: none; border: 0; box-shadow: none; }
@@ -94,12 +98,14 @@ preview.innerHTML = `<style>${CSS}
     <input class="search" type="search" placeholder="북마크 검색" tabindex="-1" readonly>
     <span class="btn">${ICON_ADD_FOLDER}</span>
     <span class="btn">${ICON_DELETE}</span>
+    <span class="btn">${ICON_SETTINGS}</span>
   </div>
   <div class="list"></div>
 </div>`;
 const previewPanel = preview.querySelector(".panel");
 
 function previewSize(k, v) {
+  if (!SIZE_KEYS.includes(k)) return; // 애니메이션 시간은 미리보기와 상관없음
   if (k === "width") $("preview").style.width = `${v}px`; // 미리보기 칸 자체를 사이드바 너비로
   else previewPanel.style.setProperty(k === "fontSize" ? "--font-size" : "--row-height", `${v}px`);
 }

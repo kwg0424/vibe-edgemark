@@ -11,9 +11,9 @@
   const EDGE = 6;          // 왼쪽 끝에서 이 px 안에 들어오면 바로 연다
   const PEEK_EDGE = 24;    // 창 모드·팝업에서 열기 탭을 띄울 때는 더 넓게 (창 테두리 밖으로 금방 나가 버리므로)
   const EXIT_EDGE = 40;    // 이 px 안에서 페이지 왼쪽 밖으로 빠져나가도 연다 (왼쪽에 모니터가 더 있을 때)
-  const DEFAULT_CONF = { openIn: "newTab", sort: "browser", accordion: false, maximizedOnly: true, peekWindowed: true, remember: false, fontSize: 15, rowHeight: 40, width: 400 }; // src/store.js 의 DEFAULTS 와 같게
+  const DEFAULT_CONF = { openIn: "end", sort: "browser", accordion: false, maximizedOnly: true, peekWindowed: true, remember: false, fontSize: 15, rowHeight: 40, width: 400, folderSpeed: 100, slideSpeed: 100 }; // src/store.js 의 DEFAULTS 와 같게
 
-  const { CSS, item, editRow, sortItems, ICON_ADD_FOLDER, ICON_DELETE, ICON_PEEK } = EdgeMarkView; // sidebar-view.js
+  const { CSS, item, editRow, sortItems, ICON_ADD_FOLDER, ICON_DELETE, ICON_SETTINGS, ICON_PEEK } = EdgeMarkView; // sidebar-view.js
 
   let peek, peekTimer;
   let host, root, backdrop, panel, search, list, tree, results;
@@ -29,6 +29,9 @@
   let asking = null; // 확인창이 떠 있으면 그 답을 정하는 함수
   let drag = null; // 드래그 중인 줄 { id, row }
   let dropAt = null, expandTimer; // 지금 표시 중인 놓을 자리 { row, pos }, 드래그 중 폴더 위에 머물면 펼치기
+  // 페이지 확대 배율. 사이드바(host)를 1/zoom 로 줄여서 확대·축소와 상관없이 같은 크기로 보이게 하고, 가장자리 감지 폭도 화면 px 로 맞춘다.
+  // 서비스 워커를 깨우지 않도록 처음 쓸 때(마우스가 왼쪽 가까이 오거나 열 때) 한 번 묻고, 그 뒤로는 바뀔 때 background.js 가 알려 준다
+  let zoom = 1, zoomAsked = false;
 
   const send = (msg) => chrome.runtime.sendMessage(msg);
   const alive = () => !!chrome.runtime?.id; // 확장을 다시 불러오면 기존 탭의 스크립트는 끊긴다
@@ -39,6 +42,7 @@
   function build() {
     host = document.createElement("edgemark-sidebar");
     host.style.cssText = "all: initial; position: fixed; top: 0; left: 0; z-index: 2147483647;";
+    applyZoom();
     root = host.attachShadow({ mode: "closed" });
     root.innerHTML = `<style>${CSS}</style>
       <div class="backdrop"></div>
@@ -48,6 +52,7 @@
           <input class="search" type="search" placeholder="북마크 검색" spellcheck="false" autocomplete="off">
           <button class="btn" data-act="folder" title="폴더 추가">${ICON_ADD_FOLDER}</button>
           <button class="btn del" data-act="delete" title="삭제 모드">${ICON_DELETE}</button>
+          <button class="btn" data-act="settings" title="설정">${ICON_SETTINGS}</button>
         </div>
         <div class="list" tabindex="-1"><div class="tree"></div><div class="results" hidden></div></div>
         <div class="toast"></div>
@@ -70,6 +75,10 @@
 
     root.querySelector('[data-act="folder"]').addEventListener("click", addFolder);
     root.querySelector('[data-act="delete"]').addEventListener("click", () => setDeleting(!deleting));
+    root.querySelector('[data-act="settings"]').addEventListener("click", () => {
+      send({ type: "options" }); // 콘텐츠 스크립트는 설정 화면을 직접 못 연다
+      close();
+    });
     root.querySelector(".ask .ok").addEventListener("click", () => asking?.(true));
     root.querySelector(".ask .cancel").addEventListener("click", () => asking?.(false));
     list.addEventListener("dragstart", onDragStart);
@@ -122,10 +131,33 @@
     await Promise.all(kids.map((b, i) => (!b.url && openFolders.has(b.id) ? expand(items[i], b.id, depth) : null)));
   }
 
-  async function expand(el, id, depth) {
+  // 하위 항목은 다 그린 뒤 한 번에 넣는다 (애니메이션이 빈 칸에서 시작하고, 반쯤 그려진 모습이 보이지 않게)
+  async function expand(el, id, depth, animate = false) {
     el.firstChild.classList.add("expanded");
-    el.lastChild.replaceChildren();
-    await renderChildren(id, el.lastChild, depth + 1);
+    const box = el.lastChild, frag = document.createDocumentFragment();
+    for (const a of box.getAnimations()) a.cancel(); // 접히는 중이었으면 멈춘다 (다 접힌 뒤 비우는 것도 안 함)
+    await renderChildren(id, frag, depth + 1);
+    if (!el.firstChild.classList.contains("expanded")) return; // 그리는 사이 다시 접힘
+    box.replaceChildren(frag);
+    if (animate) slide(box, true);
+  }
+
+  // 접기: 애니메이션이 끝나면 비운다
+  function collapse(el) {
+    el.firstChild.classList.remove("expanded");
+    const box = el.lastChild;
+    slide(box, false).then(() => { if (!el.firstChild.classList.contains("expanded")) box.replaceChildren(); }, () => {});
+  }
+
+  // 폴더 펼치기·접기 애니메이션: 하위 항목 칸의 높이를 0 ↔ 실제 높이로. 시간은 설정 folderSpeed(ms), 0 이면 바로.
+  // 끝나면 이루어지고, 중간에 멈추면(cancel) 거부되는 Promise
+  function slide(box, opening) {
+    for (const a of box.getAnimations()) a.cancel();
+    const h = box.scrollHeight;
+    if (!conf.folderSpeed || !h) return Promise.resolve();
+    const frames = [{ height: "0px", opacity: 0, overflow: "hidden" }, { height: `${h}px`, opacity: 1, overflow: "hidden" }];
+    if (!opening) frames.reverse();
+    return box.animate(frames, { duration: conf.folderSpeed, easing: "ease-out" }).finished;
   }
 
   // 열 때마다 새로 그린다 (그 사이 북마크가 바뀌었을 수 있으므로)
@@ -177,12 +209,11 @@
     const el = row.parentElement, id = row.dataset.id;
     if (openFolders.has(id)) {
       openFolders.delete(id);
-      row.classList.remove("expanded");
-      el.lastChild.replaceChildren();
+      collapse(el);
     } else {
       if (conf.accordion) collapseSiblings(el);
       openFolders.add(id);
-      await expand(el, id, +row.dataset.depth);
+      await expand(el, id, +row.dataset.depth, true);
     }
     if (conf.remember) chrome.storage.local.set({ openFolders: [...openFolders] });
   }
@@ -194,8 +225,7 @@
       const rows = sib.querySelectorAll(".row.expanded");
       if (!rows.length) continue;
       for (const r of rows) openFolders.delete(r.dataset.id);
-      sib.firstChild.classList.remove("expanded");
-      sib.lastChild.replaceChildren();
+      collapse(sib);
     }
   }
 
@@ -515,18 +545,22 @@
     const urls = (Array.isArray(kids) ? sortItems(kids, conf.sort) : []).filter((b) => b.url).map((b) => b.url);
     if (!urls.length) return toast(`'${name}' 폴더에 북마크가 없습니다`);
     if (urls.length > OPEN_ALL_ASK && !(await ask(`'${name}' 폴더의 북마크 ${urls.length}개를 모두 새 탭으로 열까요?`, "열기"))) return;
-    const res = await send({ type: "openAll", urls });
+    const res = await send({ type: "openAll", urls, pos: tabPos() });
     if (res?.error) return toast(res.error);
     toast(`북마크 ${urls.length}개를 새 탭으로 열었습니다`);
   }
 
+  // 새 탭 자리: 바로 뒤 · 지금 탭이면 지금 탭 바로 뒤, 나머지(맨 뒤, 예전 값 newTab)는 맨 뒤
+  const tabPos = () => (conf.openIn === "next" || conf.openIn === "current" ? "next" : "end");
+
   function openLink(url, where) {
-    send({ type: "open", url, where });
+    send({ type: "open", url, where, pos: tabPos() });
     if (where !== "background") close(); // 뒤에서 연 새 탭이면 계속 고를 수 있게 둔다
   }
 
   async function open() {
     if (isOpen || !alive()) return;
+    askZoom();
     if (!host) build();
     hidePeek();
     if (!host.isConnected) document.documentElement.append(host);
@@ -590,7 +624,8 @@
     if (!host.isConnected) document.documentElement.append(host);
     clearTimeout(peekTimer);
     if (peek.classList.contains("show")) return; // 이미 떠 있으면 그 자리에 둔다
-    peek.style.top = `${Math.max(8, Math.min(innerHeight - 94, y - 43))}px`;
+    // host 가 1/zoom 로 줄어 있으므로 페이지 좌표에 zoom 을 곱해 host 안 좌표로
+    peek.style.top = `${Math.max(8, Math.min(innerHeight * zoom - 94, y * zoom - 43))}px`;
     peek.classList.add("show");
   }
 
@@ -604,16 +639,35 @@
     const { mode, data } = await chrome.storage.local.get(["mode", "data"]);
     const c = mode === "server" ? data?.conf : (await chrome.storage.sync.get("conf")).conf;
     conf = { ...DEFAULT_CONF, ...c };
+    // 예전에 500ms 까지 저장했던 값은 지금 최대(300)로 (src/store.js 의 RANGES)
+    for (const k of ["slideSpeed", "folderSpeed"]) conf[k] = Number.isFinite(conf[k]) ? Math.min(300, Math.max(0, conf[k])) : DEFAULT_CONF[k];
     applyConf();
   }
 
-  // 글자 크기 · 목록 간격 · 너비 (범위는 설정 저장할 때 맞춰져 온다)
+  // 글자 크기 · 목록 간격 · 너비 · 애니메이션 시간 (범위는 설정 저장할 때 맞춰져 온다)
+  // 시간은 host 에 넣는다 (패널 옆의 반투명 덮개도 같이 쓰도록)
   function applyConf() {
     if (!panel) return;
     panel.style.setProperty("--font-size", `${conf.fontSize}px`);
     panel.style.setProperty("--row-height", `${conf.rowHeight}px`);
     panel.style.setProperty("--width", `${conf.width}px`);
+    host.style.setProperty("--slide", `${conf.slideSpeed}ms`);
+    host.style.setProperty("--fold", `${conf.folderSpeed}ms`);
   }
+
+  function askZoom() {
+    if (zoomAsked || !alive()) return;
+    zoomAsked = true;
+    send({ type: "zoom" }).then(setZoom, () => {});
+  }
+
+  function setZoom(z) {
+    if (!(z > 0) || z === zoom) return;
+    zoom = z;
+    applyZoom();
+  }
+
+  const applyZoom = () => host?.style.setProperty("zoom", String(1 / zoom));
   loadConf();
   chrome.storage.onChanged.addListener((changes, area) => {
     if ((area === "sync" && changes.conf) || (area === "local" && (changes.mode || changes.data))) loadConf();
@@ -624,14 +678,17 @@
   // 열기 탭을 띄우는 경우(최대화일 때만 열기 + 창 모드·팝업)만 감지 폭을 넓힌다
   const edgeWidth = () => (conf.maximizedOnly && conf.peekWindowed && !isMaximized() ? PEEK_EDGE : EDGE);
 
+  // 감지 폭(EDGE 등)은 화면 px 기준 → 페이지 좌표에 zoom 을 곱해서 비교한다
   addEventListener("mousemove", (e) => {
-    if (e.clientX <= EDGE || (e.clientX <= PEEK_EDGE && e.clientX <= edgeWidth())) edgeHit(e);
-    else if (e.clientX > 120 && peek?.classList.contains("show")) hidePeek(); // 마우스가 멀어지면 열기 탭은 숨긴다
+    const x = e.clientX * zoom;
+    if (x < 200) askZoom(); // 왼쪽 끝에 닿기 전에 미리 배율을 알아 둔다
+    if (x <= EDGE || (x <= PEEK_EDGE && x <= edgeWidth())) edgeHit(e);
+    else if (x > 120 && peek?.classList.contains("show")) hidePeek(); // 마우스가 멀어지면 열기 탭은 숨긴다
   }, { capture: true, passive: true });
 
   // 왼쪽에 모니터가 더 있으면 마우스가 끝에서 멈추지 않고 바로 옆 화면으로 넘어간다
   document.addEventListener("mouseout", (e) => {
-    if (!e.relatedTarget && e.clientX <= EXIT_EDGE && e.clientY >= 0 && e.clientY <= innerHeight) edgeHit(e);
+    if (!e.relatedTarget && e.clientX * zoom <= EXIT_EDGE && e.clientY >= 0 && e.clientY <= innerHeight) edgeHit(e);
   }, true);
 
   addEventListener("mousedown", (e) => {
@@ -660,5 +717,9 @@
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "toggle") isOpen ? close() : open();
+    else if (msg.type === "zoom") {
+      zoomAsked = true; // 알려 줬으니 따로 묻지 않아도 된다
+      setZoom(msg.zoom);
+    }
   });
 })();

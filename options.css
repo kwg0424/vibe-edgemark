@@ -103,6 +103,7 @@ select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .size small { color: var(--muted); font-size: 12px; margin-left: 4px; }
 .preview { flex: none; width: 400px; max-width: 100%; height: 380px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .hint { margin: 0; color: var(--muted); font-size: 12px; }
+.speeds { max-width: 488px; } /* 위 모양 섹션의 조절 칸과 같은 폭으로 */
 
 
 @media (max-width: 560px) {

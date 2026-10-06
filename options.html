@@ -21,10 +21,11 @@
       <label class="row">
         <span>
           <b>항목을 클릭하면</b>
-          <small>Ctrl·가운데 클릭은 항상 새 탭(뒤에서), Shift 클릭은 항상 새 탭으로 엽니다</small>
+          <small>Ctrl·가운데 클릭은 항상 새 탭(뒤에서), Shift 클릭은 항상 새 탭으로 엽니다. 새 탭 자리(맨 뒤 · 바로 뒤)는 이때와 폴더 모두 열기에도 같이 씁니다</small>
         </span>
         <select id="openIn">
-          <option value="newTab">새 탭에서 열기</option>
+          <option value="end">새 탭 (맨 뒤)</option>
+          <option value="next">새 탭 (지금 탭 바로 뒤)</option>
           <option value="current">지금 탭에서 열기</option>
         </select>
       </label>
@@ -80,10 +81,10 @@
             </span>
           </label>
           <label class="size">
-            <span><b>목록 간격</b> <small>한 줄의 높이 · 20 ~ 48 · 기본 40</small></span>
+            <span><b>목록 간격</b> <small>한 줄의 높이 · 20 ~ 60 · 기본 40</small></span>
             <span class="num">
-              <input type="range" id="rowHeightRange" min="20" max="48" step="1" />
-              <input type="number" id="rowHeight" min="20" max="48" step="1" /> px
+              <input type="range" id="rowHeightRange" min="20" max="60" step="1" />
+              <input type="number" id="rowHeight" min="20" max="60" step="1" /> px
             </span>
           </label>
           <label class="size">
@@ -97,6 +98,27 @@
           <p class="hint">오른쪽 미리보기는 실제 사이드바와 같은 모양·너비입니다 (즐겨찾기 모음의 앞부분).</p>
         </div>
         <div id="preview" class="preview"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>효과</h2>
+      <div class="sizes speeds">
+        <label class="size">
+          <span><b>사이드바 열고 닫는 시간</b> <small>0 ~ 300 · 기본 100 · 0 이면 바로</small></span>
+          <span class="num">
+            <input type="range" id="slideSpeedRange" min="0" max="300" step="5" />
+            <input type="number" id="slideSpeed" min="0" max="300" step="5" /> ms
+          </span>
+        </label>
+        <label class="size">
+          <span><b>폴더 펼치고 접는 시간</b> <small>0 ~ 300 · 기본 100 · 0 이면 바로</small></span>
+          <span class="num">
+            <input type="range" id="folderSpeedRange" min="0" max="300" step="5" />
+            <input type="number" id="folderSpeed" min="0" max="300" step="5" /> ms
+          </span>
+        </label>
+        <button type="button" id="btn-speed-reset">기본값으로</button>
       </div>
     </section>
 
