@@ -10,12 +10,14 @@
 
   const EDGE = 6;          // 왼쪽 끝에서 이 px 안에 들어오면 바로 연다
   const PEEK_EDGE = 24;    // 창 모드·팝업에서 열기 탭을 띄울 때는 더 넓게 (창 테두리 밖으로 금방 나가 버리므로)
+  const PEEK_MS = 5000;    // 열기 탭은 이 시간 동안 보였다가 사라진다 (탭 위에 마우스가 있는 동안은 유지)
+  const IDLE_MS = 10000;   // 열린 사이드바에서 이 시간 동안 마우스 올린 북마크·스크롤·키 입력이 그대로면 닫는다
   const EXIT_EDGE = 40;    // 이 px 안에서 페이지 왼쪽 밖으로 빠져나가도 연다 (왼쪽에 모니터가 더 있을 때)
   const DEFAULT_CONF = { openIn: "end", sort: "browser", accordion: false, maximizedOnly: true, peekWindowed: true, remember: false, fontSize: 15, rowHeight: 40, width: 400, folderSpeed: 100, slideSpeed: 100 }; // src/store.js 의 DEFAULTS 와 같게
 
   const { CSS, item, editRow, sortItems, ICON_ADD_FOLDER, ICON_DELETE, ICON_SETTINGS, ICON_PEEK } = EdgeMarkView; // sidebar-view.js
 
-  let peek, peekTimer;
+  let peek, peekTimer, leaveTimer, idleTimer; // peekTimer: 열기 탭 5초 / leaveTimer: 탭에서 마우스가 떠난 뒤 숨김
   let host, root, backdrop, panel, search, list, tree, results;
   let isOpen = false;
   let searchTimer, searchJob, shownQuery = ""; // shownQuery: 결과를 그렸거나 그리는 중인 검색어
@@ -64,8 +66,8 @@
       hidePeek();
       open();
     });
-    peek.addEventListener("mouseenter", () => clearTimeout(peekTimer));
-    peek.addEventListener("mouseleave", () => { peekTimer = setTimeout(hidePeek, 150); }); // 탭에서 마우스가 떠나면 숨긴다
+    peek.addEventListener("mouseenter", () => clearTimeout(leaveTimer));
+    peek.addEventListener("mouseleave", () => { leaveTimer = setTimeout(hidePeek, 150); }); // 탭에서 마우스가 떠나면 숨긴다
     panel = root.querySelector(".panel");
     search = root.querySelector(".search");
     list = root.querySelector(".list");
@@ -94,6 +96,8 @@
     });
     backdrop.addEventListener("wheel", (e) => e.preventDefault(), { passive: false }); // 열린 동안 뒤 페이지는 스크롤하지 않음
     panel.addEventListener("keydown", onKey);
+    // 열려 있는 동안의 움직임(북마크 위 마우스 이동, 스크롤, 클릭, 키 입력)이 있으면 자동 닫힘 시간을 다시 센다
+    for (const type of ["mouseover", "mouseout", "wheel", "mousedown", "keydown", "input"]) panel.addEventListener(type, armIdle, { passive: true });
     // 사이드바 안에서 누른 키가 페이지 단축키(YouTube 의 k 등)로 넘어가지 않게
     for (const type of ["keydown", "keyup", "keypress"]) host.addEventListener(type, (e) => e.stopPropagation());
     panel.addEventListener("mouseleave", () => {
@@ -565,6 +569,7 @@
     hidePeek();
     if (!host.isConnected) document.documentElement.append(host);
     isOpen = true;
+    armIdle();
     prevFocus = document.activeElement;
 
     // 먼저 띄우고 (지난번 트리 그대로) 북마크는 뒤에서 새로 그린다
@@ -581,9 +586,21 @@
     if (isOpen && !tree.hidden) list.scrollTop = conf.remember ? scrollTop : 0;
   }
 
+  // 사이드바가 열린 채로 IDLE_MS 동안 아무 움직임이 없으면 닫는다 (입력·삭제 확인·드래그 중에는 두고 다시 센다)
+  function armIdle() {
+    clearTimeout(idleTimer);
+    if (!isOpen) return;
+    idleTimer = setTimeout(() => {
+      if (!isOpen) return;
+      if ((search.value && root.activeElement) || editing || drag || asking) return armIdle();
+      close();
+    }, IDLE_MS);
+  }
+
   function close() {
     if (!isOpen) return;
     isOpen = false;
+    clearTimeout(idleTimer);
     if (!host) return;
     editing?.cancel(); // 닫으면 새 폴더 입력은 취소
     asking?.(false); // 확인창도 취소
@@ -618,11 +635,13 @@
     if (conf.peekWindowed && alive()) showPeek(e.clientY);
   }
 
-  // 열기 탭은 저절로 사라지지 않는다. 탭에서 마우스가 떠나거나 페이지 안쪽으로 멀어지면 숨긴다
+  // 열기 탭: 마우스가 탭에서 떠나거나 페이지 안쪽으로 멀어지면 숨기고, 마우스를 올려 둬도 PEEK_MS(5초) 뒤에는 사라진다 (왼쪽 끝에 다시 닿으면 5초를 다시 센다)
   function showPeek(y) {
     if (!host) build();
     if (!host.isConnected) document.documentElement.append(host);
+    clearTimeout(leaveTimer);
     clearTimeout(peekTimer);
+    peekTimer = setTimeout(hidePeek, PEEK_MS);
     if (peek.classList.contains("show")) return; // 이미 떠 있으면 그 자리에 둔다
     // host 가 1/zoom 로 줄어 있으므로 페이지 좌표에 zoom 을 곱해 host 안 좌표로
     peek.style.top = `${Math.max(8, Math.min(innerHeight * zoom - 94, y * zoom - 43))}px`;
@@ -631,6 +650,7 @@
 
   function hidePeek() {
     clearTimeout(peekTimer);
+    clearTimeout(leaveTimer);
     peek?.classList.remove("show");
   }
 
