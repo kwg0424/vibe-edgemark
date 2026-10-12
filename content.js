@@ -541,14 +541,11 @@
     else openLink(row.dataset.url, "background");
   }
 
-  const OPEN_ALL_ASK = 10; // 이보다 많으면 먼저 묻는다
-
   async function openAll(row) {
     const name = row.querySelector(".title").textContent;
     const kids = await send({ type: "children", id: row.dataset.id });
     const urls = (Array.isArray(kids) ? sortItems(kids, conf.sort) : []).filter((b) => b.url).map((b) => b.url);
     if (!urls.length) return toast(`'${name}' 폴더에 북마크가 없습니다`);
-    if (urls.length > OPEN_ALL_ASK && !(await ask(`'${name}' 폴더의 북마크 ${urls.length}개를 모두 새 탭으로 열까요?`, "열기"))) return;
     const res = await send({ type: "openAll", urls, pos: tabPos() });
     if (res?.error) return toast(res.error);
     toast(`북마크 ${urls.length}개를 새 탭으로 열었습니다`);
