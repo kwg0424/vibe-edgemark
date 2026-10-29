@@ -24,7 +24,10 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  background: var(--bg);
+  /* 유리 카드 뒤에 비칠 은은한 색 */
+  background: radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 45%),
+    radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--ok) 22%, transparent), transparent 45%), var(--bg);
+  background-attachment: fixed;
   color: var(--fg);
   font: 14px/1.5 "Segoe UI", "Malgun Gothic", sans-serif;
 }
@@ -32,9 +35,11 @@ main {
   max-width: 960px; /* 모양 섹션에 미리보기(최대 600px)와 조절 칸을 나란히 놓으려고 */
   margin: 32px auto;
   padding: 24px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); /* 유리 효과 */
+  border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .15);
+  border-radius: 14px;
 }
 header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 header img { width: 40px; height: 40px; }
@@ -142,7 +147,7 @@ button:disabled { opacity: 0.6; cursor: progress; }
 #form-connect input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 #form-connect .desc { margin: 0; }
 
-dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--fg); width: 340px; padding: 18px; }
-dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
+dialog { border: 1px solid rgba(255, 255, 255, .28); border-radius: 14px; background: color-mix(in srgb, var(--card) 60%, transparent); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); box-shadow: 0 10px 32px rgba(0, 0, 0, .3); color: var(--fg); width: 340px; padding: 18px; }
+dialog::backdrop { background: rgba(0, 0, 0, 0.2); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 dialog p { margin: 0 0 14px; font-size: 14px; white-space: pre-line; }
 .buttons.stack { flex-direction: column; }
