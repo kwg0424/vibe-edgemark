@@ -10,7 +10,7 @@ export function credentialSecret(cfg) {
 }
 
 // 설정 파일 이름: 아이디·비밀번호에서 PBKDF2(600k)로 만든 32자리 16진수.
-// 비밀번호가 서버 로그·폴더 목록에 드러나지 않고, TapCode · DragOn · StayTab 과 salt 가 달라 같은 폴더·같은 계정이어도 파일이 겹치지 않는다.
+// 비밀번호가 서버 로그·폴더 목록에 드러나지 않는다.
 const fileNames = new Map(); // 서비스 워커가 떠 있는 동안 메모리에만 캐시
 
 export async function credentialFileName(cfg) {

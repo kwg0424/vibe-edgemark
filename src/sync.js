@@ -3,7 +3,7 @@ import { encryptVault, decryptVault, WrongKeyError, TITLE } from "./crypto.js";
 import { credentialSecret } from "./key.js";
 import { normalizeData, sameData } from "./store.js";
 
-// 서버(WebDAV) 모드 동기화 (StayTab · DragOn 과 같은 흐름). 데이터는 기기에는 평문(chrome.storage.local), 서버에는 암호문으로 둔다.
+// 서버(WebDAV) 모드 동기화. 데이터는 기기에는 평문(chrome.storage.local), 서버에는 암호문으로 둔다.
 // local: { data, baseEtag(마지막 동기화 때 서버 ETag, 처음 연결이면 null), dirty(서버에 안 올린 변경) }
 // 서버와 이 기기 양쪽이 모두 바뀌었으면 묻지 않고 합친다 (이 기기 설정을 쓴다).
 // 반환: { data, baseEtag, action: "created" | "pushed" | "merged" | "pulled" | "unchanged" }

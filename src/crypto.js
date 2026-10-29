@@ -1,5 +1,4 @@
 // 설정 파일 암호화: PBKDF2-SHA256 → AES-256-GCM. 서버에는 이 결과물(암호문)만 저장된다.
-// (TapCode · DragOn · StayTab 과 같은 형식이라 같은 WebDAV 서버를 그대로 쓸 수 있다)
 // secret 은 별도 암호가 아니라 WebDAV 아이디·비밀번호에서 만든 값 (key.js)
 
 const ITERATIONS = 600000;

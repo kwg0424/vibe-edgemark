@@ -1,4 +1,4 @@
-/* StayTab 설정 화면과 같은 모양 */
+/* 설정 화면 */
 :root {
   --bg: #f6f7f9;
   --card: #ffffff;
@@ -110,7 +110,7 @@ select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   main { margin: 0; border-radius: 0; border: 0; padding: 16px; }
 }
 
-/* 동기화 (StayTab 설정과 같음) */
+/* 동기화 */
 .state { margin: 0; }
 .url { color: var(--muted); font-size: 13px; word-break: break-all; }
 .desc { margin: 4px 0 12px; white-space: normal; color: var(--muted); font-size: 13px; }

@@ -28,13 +28,13 @@ Bookmark Sidebar 에서 꼭 필요한 기능만 남겨 가볍게 다시 만든 �
 | 글자 크기 · 목록 간격 · 사이드바 너비 | 15px · 40px · 400px (오른쪽 미리보기로 바로 확인) |
 | 사이드바 열고 닫는 시간 · 폴더 펼치고 접는 시간 | 100ms · 100ms (0 ~ 300, 0 이면 바로) |
 
-## 동기화 (StayTab · DragOn 과 같은 방식)
+## 동기화
 | 방식 | 저장 위치 |
 |---|---|
 | 브라우저 계정 동기화 (기본) | `chrome.storage.sync` 의 `conf` |
 | 서버(WebDAV) 동기화 | `chrome.storage.local` 의 `data` + 사용자가 지정한 WebDAV 폴더의 암호화 파일 |
 
-- 서버 파일은 아이디·비밀번호로 암호화 (PBKDF2-SHA256 600k → AES-256-GCM), 파일 이름도 아이디·비밀번호에서 만든 32자리 16진수. TapCode · DragOn · StayTab 과 같은 서버·같은 계정을 써도 파일이 겹치지 않는다 (salt 다름).
+- 서버 파일은 아이디·비밀번호로 암호화 (PBKDF2-SHA256 600k → AES-256-GCM), 파일 이름도 아이디·비밀번호에서 만든 32자리 16진수.
 - 북마크 자체는 Edge 즐겨찾기 동기화가 맡는다. 펼친 폴더 상태는 이 PC에만 (`chrome.storage.local` 의 `openFolders`).
 
 ## 구조

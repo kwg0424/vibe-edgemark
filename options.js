@@ -139,7 +139,7 @@ async function load() {
   if (data.conf.sort !== sort) fillPreview(); // 정렬이 바뀌면 미리보기도 다시
 }
 
-// ---------- 동기화 (브라우저 / 서버 WebDAV) — StayTab · DragOn 과 같음 ----------
+// ---------- 동기화 (브라우저 / 서버 WebDAV) ----------
 
 let status = { mode: "browser" };
 let connectOpen = false;

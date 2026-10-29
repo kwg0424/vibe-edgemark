@@ -99,7 +99,7 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, { type: "toggle" }).catch(() => {});
 });
 
-// ---------- 서버(WebDAV) 동기화 (StayTab · DragOn 과 같음) ----------
+// ---------- 서버(WebDAV) 동기화 ----------
 
 // 설정 변경과 서버 동기화는 한 줄로 세워 처리한다 (동기화 도중 바뀐 내용을 덮어쓰지 않도록)
 let queue = Promise.resolve();

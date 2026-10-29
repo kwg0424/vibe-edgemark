@@ -1,5 +1,5 @@
 // 설정 저장소. 동기화하는 데이터 = { conf: { openIn, sort, accordion, maximizedOnly, peekWindowed, remember, fontSize, rowHeight, width, folderSpeed, slideSpeed } }
-// 저장 방식은 두 가지 (StayTab · DragOn 과 같음):
+// 저장 방식은 두 가지:
 //   browser (기본): chrome.storage.sync 의 conf 키 하나.
 //                   Edge 에 로그인하고 확장 동기화를 켜 두면 같은 계정의 다른 PC로 자동 전파된다.
 //   server        : chrome.storage.local 의 data 에 두고, 사용자가 연결한 WebDAV 서버 파일(암호화)과 동기화 (sync.js).
